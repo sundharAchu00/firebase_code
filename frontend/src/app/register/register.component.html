@@ -1,0 +1,30 @@
+
+<div class="register-form">
+  <h2>Register</h2>
+  <div class="form-group">
+    <label for="username">Username:</label>
+    <input type="text" id="username" name="username" [(ngModel)]="username" required>
+  </div>
+  <div class="form-group">
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" [(ngModel)]="password" required>
+  </div>
+  <div class="form-group-radio">
+    <label>Role:</label>
+    <label>
+      <input type="radio" name="role" value="employee" [(ngModel)]="role" checked>
+      Employee
+    </label>
+    <label>
+      <input type="radio" name="role" value="manager" [(ngModel)]="role">
+      Manager
+    </label>
+  </div>
+  <button class="submit-button" (click)="register()">Register</button>
+  <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
+  <p>
+    Already have an account? <a routerLink="/login">Login here</a>
+  </p>
+</div>
+
+    
