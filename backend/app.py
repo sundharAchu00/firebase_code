@@ -1,66 +1,70 @@
-from flask import Flask, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_cors import CORS
+from flask import Flask, request, jsonify, json
+import db_manager
+import crew_manager
+import chatbot_manager
 
 app = Flask(__name__)
-# Enable CORS for all routes
-CORS(app)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
-db = SQLAlchemy(app)
-
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(120), nullable=False)
-    role = db.Column(db.String(20), nullable=False, default='employee')
-
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
-
-with app.app_context():
-    db.create_all()
 
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-    role = data.get('role', 'employee')
-
-    if not username or not password:
-        return jsonify({'message': 'Username and password are required'}), 400
-
-    if User.query.filter_by(username=username).first():
-        return jsonify({'message': 'Username already exists'}), 400
-
-    new_user = User(username=username, role=role)
-    new_user.set_password(password)
-
-    db.session.add(new_user)
-    db.session.commit()
-
-    return jsonify({'message': 'User created successfully'}), 201
+    if not data or 'username' not in data or 'password' not in data or 'role' not in data:
+        return jsonify({'error': 'Missing required fields'}), 400
+    
+    username = data['username']
+    password = data['password']
+    role = data['role']
+    
+    if db_manager.register_user(username, password, role):
+        return jsonify({'message': 'User registered successfully'}), 201
+    else:
+        return jsonify({'error': 'User registration failed'}), 400
 
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
+    if not data or 'username' not in data or 'password' not in data:
+        return jsonify({'error': 'Missing required fields'}), 400
 
-    if not username or not password:
-        return jsonify({'message': 'Username and password are required'}), 400
+    user = db_manager.get_user_by_username(data['username'])
 
-    user = User.query.filter_by(username=username).first()
+    if user and db_manager.login_user(data['username'], data['password']):
+        return jsonify({'message': 'Login successful', 'username': user[1], 'role': user[3]}), 200
+    else:
+        return jsonify({'error': 'Invalid credentials'}), 401
 
-    if not user or not user.check_password(password):
-        return jsonify({'message': 'Invalid username or password'}), 401
+@app.route('/get-crew-result/<int:user_id>', methods=['GET'])
+def get_crew_result(user_id):
+    result = db_manager.get_last_crew_result(user_id)
+    if result:
+        return jsonify({'result': result}), 200
+    else:
+        return jsonify({'error': 'No result found'}, 404)
 
-    # Here, you would typically generate a token (e.g., JWT) and return it
-    return jsonify({'message': 'Logged in successfully', 'role': user.role}), 200
+@app.route('/chat', methods=['POST'])
+def chat():
+    data = request.get_json()
+    if not data or 'message' not in data:
+        return jsonify({'error': 'Missing message'}), 400
+    
+    message = data['message']
+    response = chatbot_manager.get_response(message)
+    return jsonify({'reply': response})
 
-if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+@app.route('/run-crew', methods=['POST'])
+def run_crew():
+    data = request.get_json()
+    if not data or 'user_id' not in data:
+        return jsonify({'error': 'Missing required fields'}), 400
+
+    user_id = data['user_id']
+    # Hardcoded paths for the files
+    feedback_pdf_path = "docs/employee_feedback.txt"
+    job_description_pdf_path = "docs/job_description.txt"
+    excel_path = "docs/study_material.xlsx"
+    study_material_pdf_path = "docs/study_material.txt"
+    result = crew_manager.run(feedback_pdf_path, job_description_pdf_path, excel_path, study_material_pdf_path, user_id)
+    return jsonify({'result': result}), 200
+
+if __name__ == "__main__":
+    app.run(debug=True, port=5000)

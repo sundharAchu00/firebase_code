@@ -1,0 +1,17 @@
+<mat-toolbar color="primary">
+  <ng-container *ngIf="isLoggedIn; else authLinks">
+    <ng-container *ngIf="userRole === 'supervisor'">
+      <a mat-button [routerLink]="['/manager']">Manager</a>
+      <a mat-button [routerLink]="['/chatbot']">Chatbot</a>
+    </ng-container>
+    <ng-container *ngIf="userRole === 'employee'">
+      <a mat-button [routerLink]="['/user']">User</a>
+      <a mat-button [routerLink]="['/chatbot']">Chatbot</a>
+    </ng-container>
+    <button mat-button (click)="logout()">Logout</button>
+  </ng-container>
+  <ng-template #authLinks>
+    <a mat-button [routerLink]="['/login']">Login</a>
+    <a mat-button [routerLink]="['/register']">Register</a>
+  </ng-template>
+</mat-toolbar>

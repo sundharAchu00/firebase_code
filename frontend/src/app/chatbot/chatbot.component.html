@@ -1,0 +1,15 @@
+<div class="chat-container">
+  <div class="messages">
+    <p *ngFor="let message of messages" [class]="message.isUser ? 'user' : 'chatbot'">
+      {{ message.text }}
+    </p>
+  </div>
+  <form class="message-form" (ngSubmit)="sendMessage()">
+    <mat-form-field class="message-input">
+      <textarea matInput placeholder="Type your message" [(ngModel)]="message" name="message"></textarea>
+    </mat-form-field>
+    <button mat-icon-button color="primary" type="submit">
+      <mat-icon>send</mat-icon>
+    </button>
+  </form>
+</div>
